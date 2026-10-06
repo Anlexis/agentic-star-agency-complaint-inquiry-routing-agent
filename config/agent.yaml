@@ -1,0 +1,44 @@
+# Agent Manifest — the registry's discovery entry point.
+#
+# Every key below is read at ROOT level. A nested `agent:` block — the shape
+# this template used to carry — is invisible to the registry: it falls back to
+# defaults, and the agent is unloadable through the platform while a standalone
+# construction keeps working, so CI and the smoke check stay green.
+#
+# Runtime parameters (max_retry, timeout_s, limits, severity, routing) live in
+# config/config.yaml, which is loaded separately and passed as Graph(config=...).
+# Do NOT put them here.
+id: "INS-C2-053"
+name: "InsuranceAgencyComplaintRoutingAgent"
+namespace: "ins"
+version: "0.1.0"
+enabled: true
+category: "Cat 2"
+# No model is invoked anywhere in this pipeline: classification, scoring and
+# routing are keyword and table lookups.
+generation_mode: "deterministic"  # deterministic | llm
+industry: "INS"
+
+# Opaque compatibility metadata. Not an inheritance selector, not a gate input.
+base_type: "ChatAgent"
+
+# Entry point — one dotted import path (module.Class), NOT a split module:/class:
+# pair. The registry does class.rsplit(".", 1) to get (module, class_name), so
+# the module part must be the module the class is defined in. The previous value
+# named a module that has no such attribute AND a class name that does not
+# exist in this repository, so the registry could not have loaded it.
+class: "src.graph.graph.InsuranceComplaintRoutingAgent"
+
+# The backbone's pre_process node declares the same level and owns the caller
+# contract. The inner domain nodes deliberately declare ANONYMOUS — see the
+# trust note in src/graph/domain_workflow_graph.py.
+required_trust_level: "VERIFIED_EXTERNAL"
+
+# Compile-time gates: declare every secret obtained via ctx.secrets.require()
+# and every extra whose client is constructed. This agent calls neither — no
+# secret is required and no model client is built — so both are empty. A
+# declaration here that the code does not back would make the agent fail to
+# compile at load time.
+requires:
+  secrets: []
+  extras: []

@@ -1,0 +1,61 @@
+[project]
+name = "ins-c2-053"
+version = "0.1.0"
+description = "InsuranceAgencyComplaintRoutingAgent — AgentCore Template"
+requires-python = ">=3.11"
+# The framework (agenticstar-agentcore) is NOT a public-PyPI dependency; it is
+# provided by CI per repository generation — a stub package on PYTHONPATH for older repos,
+# or installed from the package registry for wheel-era repos (see the dual-mode
+# run-tests job in the pipeline definition). Pinning it here would make `pip install -e .`
+# fail because it is not resolvable from the default index.
+dependencies = [
+    "agenticstar-agentcore[marketplace,openai]==1.0.3",]
+
+[project.optional-dependencies]
+dev = [
+    "pytest==8.1.1",
+    "pytest-cov==5.0.0",
+    "pytest-asyncio==0.23.6",
+    "ruff==0.4.4",
+    "mypy==1.10.0",
+    # src/graph/graph.py reads config/config.yaml. PyYAML itself is supplied by the
+    # framework install; only its stubs are needed, and exact-pinned like everything
+    # else so the type-check result is reproducible.
+    "types-PyYAML==6.0.12.20260815",
+]
+
+[build-system]
+requires = ["setuptools==68.2.2"]
+build-backend = "setuptools.build_meta"
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+
+# The agenticstar-agentcore wheel ships no py.typed marker, so every framework
+# symbol resolves to Any. Under `strict` that fails at the point of
+# INHERITANCE — `class X(FunctionNode)` — which is a fact about the wheel's
+# packaging, not about this template's types. Disabling it here keeps the rest of
+# `strict` (untyped defs, missing annotations, Any returns) doing real work.
+disallow_subclassing_any = false
+
+# The published sample agents. They reference modules a template author is meant to
+# create (src/nodes/step_a_node.py, src/tools/your_tools.py), so they cannot type-check
+# in a repo that has not created them. Excluded rather than edited — their contents are
+# the copy source for the next template author.
+exclude = "^src/examples/"
+
+[[tool.mypy.overrides]]
+module = ["framework.*", "shared.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+# `class State(AgentState)` with AgentState resolving to Any makes EVERY field
+# annotation fail valid-type. It is one cause reported once per field; chasing the
+# individual errors would be chasing the same thing twenty times over.
+module = ["src.schemas.state"]
+disable_error_code = ["valid-type"]

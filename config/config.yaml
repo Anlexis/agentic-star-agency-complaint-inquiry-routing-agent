@@ -1,0 +1,42 @@
+# Runtime parameters — loaded at graph construction and passed to every node.
+#
+# Separate from config/agent.yaml, which is the static discovery manifest and
+# carries no runtime block.
+#
+# Every value below has a reader in src/, and every reader bounds-checks it. A
+# value outside its range is DROPPED and the node's documented default applies:
+# clamping would invent a number nobody wrote and hide the mistake, while
+# dropping is visible in behaviour and reversible by fixing the file.
+#
+# The keyword tables, the routing table and the severity thresholds are NOT
+# here. They used to be advertised as overridable through an execute(state,
+# config) argument the framework never supplies, so no override could apply;
+# and a category, team or officer name arriving from this file would be a
+# string outside the closed vocabulary the output gate enforces. They live in
+# code, where they are reviewable and where the gate can trust them.
+
+# Framework retry budget, read by AgentBaseGraph.route(). Range 0-9.
+max_retry: 3
+
+# Wall-clock budget for one invocation, enforced by the HTTP adapter. The
+# pipeline is deterministic and performs no I/O, so exceeding this means
+# something is structurally wrong rather than slow. Range 1-600 seconds.
+timeout_s: 30
+
+limits:
+  # Upper bound on the complaint text, enforced at the adapter and again in
+  # PreProcessNode. Range 200-20000 characters.
+  max_input_chars: 4000
+
+severity:
+  # Added when the complaint arrived at the counter rather than by phone or
+  # online — it is already in front of a member of staff. Range 0-50.
+  counter_channel_delta: 5
+  # Added per prior complaint already on file for the policyholder, counted up
+  # to three of them. Range 0-30.
+  repeat_complaint_delta: 5
+
+routing:
+  # SLA applied when no routing rule matches the classified category, and on
+  # the non-complaint path to the general enquiry desk. Range 1-720 hours.
+  fallback_sla_hours: 72
